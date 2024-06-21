@@ -17,6 +17,7 @@ let TopTime = 0;        //コマ
 let Time = 0;           //秒
 let StartTime = 3;      //カウントダウン
 let TimerOn = true;     //時間制限有無
+const   gKey = new Uint8Array( 0x100 ); //キー入力バッファ
 
 //初期情報
 let GameState = "title"; 
@@ -26,6 +27,21 @@ let mint = 0;
 let HeartNumMax = 4;    //最大残機数
 let Heart = HeartNumMax;    //残機
 let GameSpeed = 1000; //gamespeed
+//問題文関連
+let textfile  ;
+let space = 0
+const   eText = new Array("よみこみにしっぱいしました"); 
+let questionText = eText;            //問題文
+let quesCol = 0;    //列目
+let quesLin = 0;    //行目
+let quesText = Array.from(questionText[quesLin]);   //現在の問題文1行
+let typ = quesText[quesCol];                       //現在の問題文字
+const   TypeText = [['']];  //タイプ例配列[行][列]
+let Ans = "";           //回答
+//スコア関連
+let NumType = 0;        //タイプした回数
+let NumWord = 0;        //タイプした文字数
+let Miss = 0;           //ミスした回数
 
 function drawAll(){
     canvasCT.clearRect(0,0,canvas.width,canvas.height);
@@ -36,6 +52,15 @@ function drawAll(){
 
     if(GameState == "title"){
         drawTitle();
+        
+    } else if(GameState == "Ready" || GameState =="Game"){
+        drawGame();
+    } else if (GameState == "Finish"){
+        drawFinish();
+    }
+
+    if(GameState == "Ready"){
+        drawReady();
     }
 }
 function drawTitle(){
@@ -99,6 +124,55 @@ function drawTitle(){
      //canvasCT.fillText(MouseSelect,bs*15,bs*12.6); //動作確認用
 
 }
+function drawReady(){
+    canvasCT.fillStyle = "red";
+    canvasCT.font = bs*3+"px monospace"; 
+    canvasCT.fillText(StartTime,bs*7,bs*7); 
+}
+
+function drawGame(){
+    if(GameState == "Game" && Time < 1){
+        canvasCT.font = bs*3+"px monospace"; 
+        canvasCT.fillStyle = "rgba(255,0,0,"+(1-TopTime/SECOND)+")";   //徐々に透明に
+        canvasCT.fillText("START!",bs*4,bs*7);
+        
+    }
+    canvasCT.font = bs*1+"px monospace"; 
+    space = 0;
+    canvasCT.fillStyle = "orange";
+    for(i=0;i<quesText.length;i++){
+        if(i==quesCol) canvasCT.fillStyle="turquoise";
+        else if(i>quesCol) canvasCT.fillStyle="black";
+        
+        canvasCT.fillText(quesText[i],bs*(1+space),bs*3);
+        code = quesText[i].charCodeAt(0);
+        if(code <= 255 )space += 0.5;
+        else space += 1;
+    }
+    space = 0;
+    canvasCT.fillStyle = "orange";
+    for(n=0;n<TypeText[quesLin].lengthl;n++){
+        if(n >= quesCol) canvasCT.fillStyle="black";
+        if(TypeText[quesLin][n] != null ){
+            for(y=0;y < TypeText[quesLin][n].length;y++){
+                if(n == quesCol && TypeText[quesLin][n].substring(0,y+1) == Ans.substring(0,y+1)) canvasCT.fillStyle = "orange";
+                canvasCT.fillText(TypeText[quesLin][n].substring(y,y+1),bs*(1+space),bs*5);
+                space += 0.5;
+            }
+        }
+    }
+
+    canvasCT.fillStyle = "white";
+    if(HeartNumMax == 0) canvasCT.fillText("残機：∞",bs*2,bs*1.2); 
+    else canvasCT.fillText("残機："+ Heart,bs*2,bs*1.2); 
+    if(TimeLimit == 0) canvasCT.fillText(Time +"秒経過",bs*14,bs*1+bs/4);
+    else canvasCT.fillText("残り"+(TimeLimit-Time) +"秒",bs*14,bs*1+bs/4);
+
+}
+
+function drawFinish(){
+
+}
 
 function State()
 {
@@ -120,7 +194,7 @@ function State()
                 TopTime = 0;
             }    
         }
-        if(GameMode == 1){  //時間制
+        if(TimeLimit != 0){  //時間制
             if(Time >= TimeLimit){
                 GameState = "Finish";
                 //if(option[4])SEFinish.play(0.1);
@@ -137,8 +211,20 @@ window.onload = function()
     });
     setInterval( function(){ 
         Timer() 
-    },INTERVAL)       //33ms間隔でWmTimer()を呼び出させる(約30.3fps)
+    },INTERVAL);      //33ms間隔でWmTimer()を呼び出させる(約30.3fps)
+
 }
+
+window.addEventListener('DOMContentLoaded', function(){
+
+	fetch('..Question/test.txt') // (1) リクエスト送信
+	.then(response => response.text()) // (2) レスポンスデータを取得
+	.then(data => { // (3)レスポンスデータを処理
+
+		console.log(data)
+
+	});
+});
 
 function Timer()
 {
@@ -200,11 +286,11 @@ window.onmousedown = function(e){
         if(MouseSelect[0]){ GameMode = 0; HeartNumMax = 0 ;TimeLimit = 120;}         //ノーマルに変更
         else if(MouseSelect[1]){ GameMode = 1; HeartNumMax = 4; TimeLimit = 120; }    //ハードに変更
         else if(MouseSelect[2]){ GameMode = 2; HeartNumMax = 1; TimeLimit = 120;}    //ノーミスに変更
-        else if(MouseSelect[3]){ GameMode = 3; }    //エンドレスに変更
+        else if(MouseSelect[3]){ GameMode = 3; HeartNumMax = 0 ;TimeLimit = 0;}    //エンドレスに変更
         else if(MouseSelect[4]){ GameMode = 4; }    //カスタムに変更
         else if(MouseSelect[5]){                    //決定
             for(let s = 0; s < MouseSelect.length; s++){ MouseSelect[s] = false; }
-            state = "Ready"; //準備完了画面へ
+            GameState = "Ready"; //準備完了画面へ
         } else if(MouseSelect[6]){ 
             if(HeartNumMax > 0)HeartNumMax --;
                 else if (HeartNumMax == 0) HeartNumMax = 99;
