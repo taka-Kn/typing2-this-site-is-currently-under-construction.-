@@ -1,3 +1,4 @@
+
 let canvas =document.getElementById("canvas");
 let canvasCT =canvas.getContext("2d"); 
 let winwidth = window.innerWidth;   //画面の横幅
@@ -19,29 +20,30 @@ let StartTime = 3;      //カウントダウン
 let TimerOn = true;     //時間制限有無
 const   gKey = new Uint8Array( 0x100 ); //キー入力バッファ
 
+
+
+
 //初期情報
 let GameState = "title"; 
 let GameMode = 4;   //0:ノーマル 1:ハード 2:ノーミス 3:エンドレス 4:カスタム
 let TimeLimit = 60*2;    //時間制限の場合のタイムリミット(秒)
-let mint = 0;
 let HeartNumMax = 4;    //最大残機数
 let Heart = HeartNumMax;    //残機
 let GameSpeed = 1000; //gamespeed
 //問題文関連
-let textfile  ;
 let space = 0
-const   eText = new Array("よみこみにしっぱいしました"); 
-let questionText = eText;            //問題文
+
+let questionText = ["apple","banana","melon","mango","starwberry","blueberry","orange"] ;        //問題文
 let quesCol = 0;    //列目
-let quesLin = 0;    //行目
-let quesText = Array.from(questionText[quesLin]);   //現在の問題文1行
+let quesLin = Math.floor( Math.random() * questionText.length);    //行目
+let quesText = questionText[quesLin];   //現在の問題文1行
 let typ = quesText[quesCol];                       //現在の問題文字
-const   TypeText = [['']];  //タイプ例配列[行][列]
-let Ans = "";           //回答
+const   TypeText = [['']];  //タイプ例配列[行][列]          //回答
 //スコア関連
 let NumType = 0;        //タイプした回数
-let NumWord = 0;        //タイプした文字数
 let Miss = 0;           //ミスした回数
+
+
 
 function drawAll(){
     canvasCT.clearRect(0,0,canvas.width,canvas.height);
@@ -119,9 +121,9 @@ function drawTitle(){
             else  canvasCT.fillText("無制限",bs*15.6,bs*8.2);
 
     }
-     //canvasCT.fillText("GameMode:"+ GameMode,bs*25,bs*14.6); //動作確認用
-     //canvasCT.fillText("残機数:"+ HeartNumMax,bs*25,bs*12.6); //動作確認用
-     //canvasCT.fillText(MouseSelect,bs*15,bs*12.6); //動作確認用
+
+    
+    
 
 }
 function drawReady(){
@@ -137,46 +139,41 @@ function drawGame(){
         canvasCT.fillText("START!",bs*4,bs*7);
         
     }
-    canvasCT.font = bs*1+"px monospace"; 
+    canvasCT.font = bs*2+"px monospace"; 
     space = 0;
     canvasCT.fillStyle = "orange";
     for(i=0;i<quesText.length;i++){
         if(i==quesCol) canvasCT.fillStyle="turquoise";
         else if(i>quesCol) canvasCT.fillStyle="black";
         
-        canvasCT.fillText(quesText[i],bs*(1+space),bs*3);
+        canvasCT.fillText(quesText[i],bs*(4.5+space),bs*6.5);
         code = quesText[i].charCodeAt(0);
-        if(code <= 255 )space += 0.5;
-        else space += 1;
+        if(code <= 255 )space += 1.2;
+        else space += 3;
     }
+    canvasCT.font = bs*1+"px monospace"; 
     space = 0;
-    canvasCT.fillStyle = "orange";
-    for(n=0;n<TypeText[quesLin].lengthl;n++){
-        if(n >= quesCol) canvasCT.fillStyle="black";
-        if(TypeText[quesLin][n] != null ){
-            for(y=0;y < TypeText[quesLin][n].length;y++){
-                if(n == quesCol && TypeText[quesLin][n].substring(0,y+1) == Ans.substring(0,y+1)) canvasCT.fillStyle = "orange";
-                canvasCT.fillText(TypeText[quesLin][n].substring(y,y+1),bs*(1+space),bs*5);
-                space += 0.5;
-            }
-        }
-    }
+    canvasCT.fillStyle = "black";
+    canvasCT.fillText(quesText,bs*4.5,bs*4)
 
     canvasCT.fillStyle = "white";
     if(HeartNumMax == 0) canvasCT.fillText("残機：∞",bs*2,bs*1.2); 
-    else canvasCT.fillText("残機："+ Heart,bs*2,bs*1.2); 
+    else canvasCT.fillText("残機："+ Heart,bs*0.5,bs*1.2); 
     if(TimeLimit == 0) canvasCT.fillText(Time +"秒経過",bs*14,bs*1+bs/4);
     else canvasCT.fillText("残り"+(TimeLimit-Time) +"秒",bs*14,bs*1+bs/4);
 
 }
 
 function drawFinish(){
-
+    fillTextLine("しゅーりょー","white",bs*1.8,bs*5,bs*2); 
+    fillTextLine("タイプ数  ："+ NumType +"回"+"\n"+ "Miss数    ："+ Miss +"回"+"\n"+"経過時間  ："+ Time +"秒"+"\n"+"タイプ速度："+ Math.floor((NumType/Time)*100)/100 +"回/秒","white",bs*1,bs*2,bs*4 );
+    fillTextLine("同じ設定でリトライ → Spaceキー \nゲームモード選択   → Enterキー","white",bs*1.2,bs*2,bs*10);
 }
 
 function State()
 {
     if(GameState == "Ready"){
+        
         TopTime++;
         if(TopTime >= SECOND){
             StartTime--;
@@ -209,22 +206,12 @@ window.onload = function()
     });
     this.document.body.addEventListener("mouseleave",function(e){
     });
+    
     setInterval( function(){ 
         Timer() 
     },INTERVAL);      //33ms間隔でWmTimer()を呼び出させる(約30.3fps)
 
 }
-
-window.addEventListener('DOMContentLoaded', function(){
-
-	fetch('..Question/test.txt') // (1) リクエスト送信
-	.then(response => response.text()) // (2) レスポンスデータを取得
-	.then(data => { // (3)レスポンスデータを処理
-
-		console.log(data)
-
-	});
-});
 
 function Timer()
 {
@@ -232,6 +219,7 @@ function Timer()
     //winheight = window.innerHeight;
     State();
     drawAll();
+    //OperationConfirmation();
 }
 
 function fillTextLine (text,c,size, x, y) {
@@ -305,4 +293,63 @@ window.onmousedown = function(e){
                 else if(TimeLimit == 5970) TimeLimit = 0;
         } 
     }
+}
+
+window.document.onkeydown = function (event){
+
+	if(GameState=="Game"){
+        if(event.key == quesText[quesCol]) {
+            quesCol ++ ;
+            NumType ++;
+        } else if(HeartNumMax != 0 && Heart != 1){ 
+            Heart --; 
+            Miss ++;
+        } else if(HeartNumMax != 0 && Heart == 1) GameState="Finish";
+
+        if(quesCol == quesText.length){
+            quesCol=0
+             quesLin = Math.floor( Math.random() * questionText.length);    //行目
+             quesText = questionText[quesLin];
+        }
+    }else if(GameState=="title"){
+        if(event.key == " ") GameState = "Ready";
+    }else if(GameState="Finish"){
+         if(event.key == " ") {
+           
+            scoreReset();
+            GameState = "Ready";
+        } else if(event.key == "Enter") {
+           
+            scoreReset();
+            GameState = "title";
+        }
+    }
+
+
+	
+}
+
+function scoreReset(){
+    Heart = HeartNumMax;
+    NumType = 0;
+    Miss = 0;
+    quesCol = 0;
+    Time = 0;
+}
+
+function OperationConfirmation(){
+    canvasCT.fillStyle="white";
+    canvasCT.font= bs*1+"px monospace"; 
+     canvasCT.fillText("GameMode:"+ GameMode,bs*25,bs*14.6); //動作確認用
+     canvasCT.fillText("残機数:"+ HeartNumMax,bs*25,bs*12.6); //動作確認用
+     //canvasCT.fillText(MouseSelect,bs*15,bs*12.6); //動作確認用
+     canvasCT.fillText(NumType,bs*30,bs*2); //動作確認用
+     canvasCT.fillText(Miss,bs*30,bs*3); //動作確認用
+     canvasCT.fillText(Time,bs*30,bs*4); //動作確認用
+     canvasCT.fillText(Heart,bs*30,bs*5); //動作確認用
+     canvasCT.fillText(quesCol,bs*30,bs*6); //動作確認用
+     canvasCT.fillText(GameState,bs*30,bs*7);
+
+
+
 }
